@@ -196,12 +196,12 @@ footer{padding:40px 0 56px;color:var(--mute);font-size:12px;border-top:1px solid
  animation:drift 26s ease-in-out infinite alternate;filter:blur(8px)}
 @keyframes drift{from{transform:translate3d(-2.5%,-2%,0) scale(1)}to{transform:translate3d(3.5%,3%,0) scale(1.1)}}
 /* hero */
-.scene{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:calc(100vh - 66px);padding:8px 0 24px;text-align:center}
+.scene{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);align-items:center;gap:26px;min-height:calc(100vh - 66px);padding:8px 0 24px}
 .scene .art{position:relative;animation:float 13s ease-in-out infinite alternate}
 @keyframes float{from{transform:translateY(-9px)}to{transform:translateY(9px)}}
-.scene .say{text-align:center;order:-1}
-.scene .art{width:min(100%,760px)}
-.word{font-size:clamp(70px,12vw,172px);line-height:.82;letter-spacing:-.05em;font-weight:700;margin:0;
+.scene .say{text-align:left}
+.scene .art{width:100%}
+.word{font-size:clamp(64px,10.5vw,158px);line-height:.82;letter-spacing:-.05em;font-weight:700;margin:0;
  color:#fffdf9;
  text-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 1px rgba(255,255,255,.7),0 6px 22px rgba(126,106,78,.16),0 1px 0 rgba(150,128,96,.22);
  animation:flick 5.6s steps(1,end) infinite}
@@ -221,8 +221,8 @@ footer{padding:40px 0 56px;color:var(--mute);font-size:12px;border-top:1px solid
 .scroller i{display:block;width:1px;height:34px;background:var(--hair2);position:relative;overflow:hidden}
 .scroller i:after{content:'';position:absolute;left:0;width:1px;height:9px;background:var(--ink);animation:fall 1.9s cubic-bezier(.6,0,.4,1) infinite}
 @keyframes fall{0%{top:-10px}60%,100%{top:34px}}
-.chips2{justify-content:center;margin-top:2px}
-@media(max-width:900px){.scene{min-height:0;padding:14px 0 22px}}
+.chips2{margin-top:18px}
+@media(max-width:900px){.scene{grid-template-columns:1fr;min-height:0;padding:14px 0 22px;text-align:center}.scene .say{text-align:center}.chips2{justify-content:center}.scene .art{order:-1}}
 /* HUD */
 .hud{position:fixed;right:20px;bottom:20px;z-index:30;width:268px;border:1px solid var(--hair2);border-radius:12px;background:rgba(255,255,255,.66);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:13px 15px;box-shadow:0 10px 34px rgba(80,66,50,.09);transition:opacity .3s,transform .3s}
 .hud.off{opacity:0;transform:translateY(10px);pointer-events:none}
