@@ -290,7 +290,7 @@ footer{padding:40px 0 56px;color:var(--mute);font-size:12px;border-top:1px solid
 
 <header>
   <div class="wrap">
-    <a class="brand" href="#" id="home"><canvas id="logo" width="34" height="34"></canvas><span>vane</span></a>
+    <span></span>
     <nav id="nav">
       <button data-v="stage" class="on">Stage</button>
       <button data-v="board">Board</button>
@@ -586,9 +586,6 @@ function vanePath(g,cx,cy,R,ang,ringOnly,needleOnly){
   poly([P(a1,0),P(a0,fw),P(fn,0)]);
   poly([P(a1,0),P(a0,-fw),P(fn,0)]);
 }
-(function logo(){var c=$('#logo'),d=Math.min(2,devicePixelRatio||1);
-  c.width=34*d;c.height=34*d;var g=c.getContext('2d');g.scale(d,d);g.fillStyle='#141414';
-  vanePath(g,17,17,15,-0.62);})();
 
 // ---------- the dial ----------
 var DIAL={ang:-0.62,target:-0.62,glow:0};
@@ -626,7 +623,7 @@ function dial(){
   var FS=Math.max(9,Math.round(w*0.0205)), FS2=Math.max(8,Math.round(w*0.0165));
   for(var i=0;i<n;i++){
     var a2=-Math.PI/2+i*2*Math.PI/n, tk=RING[i], q=Q&&Q[tk];
-    var inG=gr.tks.indexOf(tk)>=0, on=(a.pick===tk&&!a.quiet);
+    var inG=gr.tks.indexOf(tk)>=0, on=(a.pick===tk);
     var r0=R*1.12;
     if(inG){
       var v=(sc[tk]||0)/mx, len=R*0.20*Math.abs(v), rA=v>=0?r0:r0-len, rB=v>=0?r0+len:r0;
@@ -646,7 +643,7 @@ function dial(){
     if(on){ g.beginPath();g.arc(cx+Math.cos(a2)*R*1.04,cy+Math.sin(a2)*R*1.04,w*0.017,0,7);
       g.fillStyle='rgba(20,20,20,.10)';g.fill();
       g.beginPath();g.arc(cx+Math.cos(a2)*R*1.04,cy+Math.sin(a2)*R*1.04,w*0.008,0,7);
-      g.fillStyle='#141414';g.fill(); }
+      g.fillStyle=a.quiet?'#9c968e':'#141414';g.fill(); }
     var lr=R*(1.42+(inG?0.10:0.06));
     var lx=cx+Math.cos(a2)*lr, ly=cy+Math.sin(a2)*lr;
     g.font=(on?'500 ':'400 ')+FS+'px M,monospace';
@@ -692,14 +689,14 @@ function angleFor(a){
 function seed(){
   var t=now();
   return [
-   {id:'m-01',name:'kestrel',tk:'KSTL',ground:'semis',bal:186.4,fed:1240.5,hours:38,pick:'NVDA',
-    today:[],pile:{},delivUsd:1054.10,spentUsd:0,born:t-DAY*6,quiet:false,last:t},
-   {id:'m-02',name:'pennant',tk:'PENN',ground:'mega',bal:92.1,fed:730.0,hours:22,pick:'MSFT',
-    today:[],pile:{},delivUsd:637.90,spentUsd:0,born:t-DAY*4,quiet:false,last:t},
-   {id:'m-03',name:'lode',tk:'LODE',ground:'plat',bal:41.8,fed:305.6,hours:11,pick:'META',
-    today:[],pile:{},delivUsd:263.80,spentUsd:0,born:t-DAY*2,quiet:false,last:t},
-   {id:'m-04',name:'gale',tk:'GALE',ground:'all',bal:0,fed:118.0,hours:5,pick:null,
-    today:[],pile:{},delivUsd:118.00,spentUsd:0,born:t-DAY*9,quiet:true,last:t-DAY*3}];
+   {id:'m-01',name:'kestrel',tk:'KSTL',ground:'semis',bal:0,fed:0,hours:0,pick:null,
+    today:[],pile:{},delivUsd:0,spentUsd:0,born:t,quiet:true,last:0},
+   {id:'m-02',name:'pennant',tk:'PENN',ground:'mega',bal:0,fed:0,hours:0,pick:null,
+    today:[],pile:{},delivUsd:0,spentUsd:0,born:t,quiet:true,last:0},
+   {id:'m-03',name:'lode',tk:'LODE',ground:'plat',bal:0,fed:0,hours:0,pick:null,
+    today:[],pile:{},delivUsd:0,spentUsd:0,born:t,quiet:true,last:0},
+   {id:'m-04',name:'gale',tk:'GALE',ground:'all',bal:0,fed:0,hours:0,pick:null,
+    today:[],pile:{},delivUsd:0,spentUsd:0,born:t,quiet:true,last:0}];
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify({A:A,T:T}))}catch(e){}}
 function load(){try{var j=JSON.parse(localStorage.getItem(KEY)||'null');
@@ -769,25 +766,6 @@ function feed(a,usd){
   save();
 }
 
-function prime(a){
-  if(a.quiet||a.today.length||!Q)return;
-  var t0=T,h0=a.hours,b0=a.bal,s0=a.spentUsd;
-  var since=Math.floor((T%DAY)/HOUR), n=Math.min(9,since);
-  var per=Math.max(2,a.fed/Math.max(1,a.hours));
-  if(since>=1){
-    var gr=ground(a.ground),lines=[],left=a.delivUsd;
-    gr.tks.forEach(function(tk,i){var q=Q[tk];if(!q)return;
-      var part=a.delivUsd*(i===gr.tks.length-1?1:0.34/Math.max(1,gr.tks.length-1)*(i+1));
-      if(part>0)lines.push(sh(part/q.price)+' '+tk)});
-    a.today.push({k:'mid',t:Math.floor(T/DAY)*DAY,usd:a.delivUsd,names:lines.length,lines:lines,hash:txh('d0'+a.id)});
-  }
-  for(var i=n;i>=1;i--){
-    T=t0-i*HOUR;
-    a.bal=per*(0.55+0.9*(((i*7919)%101)/101));
-    act(a,Math.max(4,12-i));
-  }
-  T=t0;a.bal=b0;a.hours=h0;a.spentUsd=s0;
-}
 // ---------- falling dust ----------
 var DUST=[],DW=0,DH=0;
 function dustInit(){
@@ -823,7 +801,7 @@ function dust(dt){
 function ch(tk){var q=Q&&Q[tk];if(!q||!q.prev)return null;return (q.price/q.prev-1)*100}
 function rows(){
   var a=get(SEL),el=$('#rows');if(!a)return;
-  if(!a.today.length){el.innerHTML='<div class="empty">'+(a.quiet?'quiet. feed the wallet and it acts on the next hour.':'nothing yet. the next hour is its first.')+'</div>';return}
+  if(!a.today.length){el.innerHTML='<div class="empty">'+(a.quiet?(a.fed>0?'quiet. feed the wallet and it acts on the next hour.':'nothing here yet. no fee has reached it, so it has bought nothing.'):'nothing yet. the next hour is its first.')+'</div>';return}
   el.innerHTML=a.today.map(function(r){
     if(r.k==='buy')return '<div class="hr"><span class="t mono">'+utc(r.t)+'</span><span class="tk">'+r.tk+'</span>'+
       '<span class="liq"><i style="width:'+(r.w*100).toFixed(0)+'%"></i></span>'+
@@ -847,7 +825,7 @@ function evidence(){
   el.innerHTML=gr.tks.map(function(tk){
     var q=Q&&Q[tk],v=sc[tk],has=(v!==undefined);
     var w=has?Math.min(50,Math.abs(v)/mx*50):0, neg=has&&v<0;
-    return '<div class="evr'+(a.pick===tk&&!a.quiet?' win':'')+'"><span class="nm mono">'+tk+'</span>'+
+    return '<div class="evr'+(a.pick===tk?' win':'')+'"><span class="nm mono">'+tk+'</span>'+
       '<span class="track"><b></b><i class="'+(neg?'dn':'')+'" style="left:'+(neg?50-w:50)+'%;width:'+w+'%"></i></span>'+
       '<span class="r mono '+(has?(v>=0?'up':'dn'):'')+'">'+(has?(v>=0?'+':'')+v.toFixed(2):'—')+'</span>'+
       '<span class="r mono">'+(q?q.price.toFixed(2):'—')+'</span></div>'}).join('');
@@ -912,8 +890,9 @@ function vitals(){
   var a=get(SEL);if(!a)return;
   var gr=ground(a.ground);
   $('#aId').textContent=a.id;$('#aName').textContent=a.name+' $'+a.tk;
-  $('#aState').textContent=a.quiet?'quiet':'awake';
-  $('#cState').innerHTML='<span class="dot"></span>'+(a.quiet?'quiet':'awake');
+  var word=a.quiet?(a.fed>0?'quiet':'waiting'):'awake';
+  $('#aState').textContent=word;
+  $('#cState').innerHTML='<span class="dot"></span>'+word;
   $('#cState').className='chip2'+(a.quiet?' q':'');
   $('#aGround').textContent=gr.label+' · '+gr.tks.join(' ');
   $('#aHours').textContent=a.hours;
@@ -923,9 +902,11 @@ function vitals(){
   $('#nDeliv').textContent=fmt(a.delivUsd/SUPPLY*1e6);
   $('#nDelivSub').textContent=fmt(a.delivUsd)+' delivered in total';
   $('#nBal').textContent=fmt(a.bal);
-  $('#nBalSub').textContent=a.quiet?'the wallet is empty':'spent whole on the next hour';
-  var r=a.quiet?null:reading(a);
-  $('#aPick').innerHTML=a.quiet?'it is not reading anything.':(r?'reading <b>'+r.tk+'</b> &mdash; strongest flow in '+esc(gr.label)+' <span class="mono" style="color:var(--mute)">'+(r.ev.score>=0?'+':'')+r.ev.score.toFixed(2)+'</span>':'no price read.');
+  $('#nBalSub').textContent=a.quiet?(a.fed>0?'the wallet is empty':'nothing has reached it yet'):'spent whole on the next hour';
+  var r=reading(a);
+  $('#aPick').innerHTML=!r?'no price read.':(a.quiet
+    ? 'it would buy <b>'+r.tk+'</b> on the next hour, if a fee reached it.'
+    : 'reading <b>'+r.tk+'</b> &mdash; strongest flow in '+esc(gr.label)+' <span class="mono" style="color:var(--mute)">'+(r.ev.score>=0?'+':'')+r.ev.score.toFixed(2)+'</span>');
   $('#tVal').textContent=hn?fmt(hold):'nothing yet';
   $('#tCount').textContent=a.today.filter(function(x){return x.k==='buy'}).length+' fills';
   var left=DAY-(Math.floor(T)%DAY);
@@ -934,13 +915,15 @@ function vitals(){
   $('#rule').innerHTML='rule: <b>strongest flow in the ground</b>';
   var fills=a.today.filter(function(x){return x.k==='buy'}).length;
   $('#cFills').textContent=fills;
-  $('#cPick').textContent=a.quiet?'nothing':(a.pick||'—');
+  $('#cPick').textContent=a.pick||'—';
   $('#cCd').textContent=hms(DAY-(Math.floor(T)%DAY));
   $('#hName').textContent=a.name+' $'+a.tk;
-  $('#hState').textContent=a.quiet?'quiet':'awake';
+  $('#hState').textContent=word;
   $('#hDeliv').textContent=fmt(a.delivUsd/SUPPLY*1e6);
   $('#hBal').textContent=fmt(a.bal)+' waiting';
-  $('#hSay').textContent=a.quiet?'the wallet is empty. it is not deleted, and a fee wakes it.'
+  $('#hSay').textContent=a.quiet
+    ? (a.fed>0?'the wallet is empty. it is not deleted, and a fee wakes it.'
+             :'no fee has reached it yet. it has bought nothing and delivered nothing.')
     :(hn? 'holding '+fmt(hold)+' across '+hn+(hn>1?' names':' name')+'. all of it leaves at midnight.'
         : 'nothing bought yet today. the next hour is its first.');
   evidence();holdings();daystrip();split();
@@ -981,7 +964,7 @@ function mini(el,a){
   }
   g.save();g.translate(cx,cy);
   g.fillStyle=a.quiet?'#c9c2b9':'rgba(20,20,20,.88)';vanePath(g,0,0,R,-0.62,true);
-  g.fillStyle=a.quiet?'#bcb5ac':'#141414';vanePath(g,0,0,R,a.quiet?-0.62:angleFor(a),false,true);
+  g.fillStyle=a.quiet?'#bcb5ac':'#141414';vanePath(g,0,0,R,angleFor(a),false,true);
   g.restore();
 }
 var SORT={k:'deliv',asc:false};
@@ -989,7 +972,7 @@ function tbl(){
   var el=$('#tbody');if(!el)return;
   var rows=A.slice().map(function(a){
     return {a:a,name:a.name,ground:ground(a.ground).label,hours:a.hours,
-      deliv:a.delivUsd/SUPPLY*1e6,total:a.delivUsd,fed:a.fed,state:a.quiet?'quiet':'awake'}});
+      deliv:a.delivUsd/SUPPLY*1e6,total:a.delivUsd,fed:a.fed,state:a.quiet?(a.fed>0?'quiet':'waiting'):'awake'}});
   rows.sort(function(x,y){var k=SORT.k,vx=x[k],vy=y[k];
     if(typeof vx==='string')return SORT.asc?String(vx).localeCompare(vy):String(vy).localeCompare(vx);
     return SORT.asc?vx-vy:vy-vx});
@@ -1022,7 +1005,7 @@ function board(){
   el.innerHTML=A.map(function(a){var gr=ground(a.ground);
     return '<div class="ag card'+(a.id===SEL?' on':'')+'" data-id="'+a.id+'">'+
      '<div class="top"><div><div class="nm">'+esc(a.name)+'</div><div class="tk mono">$'+esc(a.tk)+' · '+a.id+'</div>'+
-     '<div class="gr">'+esc(gr.label)+'</div></div><span class="pill'+(a.quiet?' q':'')+'"><span class="dot"></span>'+(a.quiet?'quiet':'awake')+'</span></div>'+
+     '<div class="gr">'+esc(gr.label)+'</div></div><span class="pill'+(a.quiet?' q':'')+'"><span class="dot"></span>'+(a.quiet?(a.fed>0?'quiet':'waiting'):'awake')+'</span></div>'+
      '<div class="two"><div><i>delivered / 1M</i><b class="mono">'+fmt(a.delivUsd/SUPPLY*1e6)+'</b></div>'+
      '<div><i>hours acted</i><b class="mono">'+a.hours+'</b></div></div>'+
      '<canvas class="mini" data-id="'+a.id+'"></canvas>'+
@@ -1036,7 +1019,7 @@ function board(){
   $('#f1').textContent='0';$('#f2').textContent='0';$('#f3').textContent='$0.00';$('#f4').textContent='$0.00';
 }
 function follow(id){var a=get(id);if(!a)return;SEL=id;
-  if(!a.quiet&&Q){var r=reading(a);if(r)a.pick=r.tk}
+  if(Q){var r=reading(a);if(r)a.pick=r.tk}
   DIAL.target=angleFor(a);rows();vitals();
   $$('#cards .ag').forEach(function(c){c.classList.toggle('on',c.dataset.id===id)});
 }
@@ -1076,7 +1059,6 @@ function show(v){
   scrollTo({top:0,behavior:'smooth'});
 }
 $$('#nav button').forEach(function(b){b.onclick=function(){show(b.dataset.v)}});
-$('#home').onclick=function(e){e.preventDefault();show('stage')};
 
 // ---------- controls ----------
 $('#send').onclick=function(){
@@ -1108,8 +1090,8 @@ $('#lReset').onclick=function(){try{localStorage.removeItem(KEY)}catch(e){}A=see
 
 // ---------- quotes ----------
 function quotes(){return fetch('/api/quote').then(function(r){return r.json()}).then(function(j){
-  Q=j.quotes;VIA=j.via;A.forEach(function(a){if(!a.quiet){var r=reading(a);if(r)a.pick=r.tk}});
-  A.forEach(prime);rows();save();
+  Q=j.quotes;VIA=j.via;A.forEach(function(a){var r=reading(a);if(r)a.pick=r.tk});
+  rows();
   if(SEL)DIAL.target=angleFor(get(SEL));
   vitals();board();return j}).catch(function(){VIA='no prices';vitals()})}
 
