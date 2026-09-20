@@ -540,7 +540,7 @@ var GROUNDS=[
  {id:'plat',label:'platforms',tks:['GOOGL','GOOG','META','AMZN']},
  {id:'all',label:'anything on the board',tks:LIST.slice()}];
 function ground(id){for(var i=0;i<GROUNDS.length;i++)if(GROUNDS[i].id===id)return GROUNDS[i];return GROUNDS[0]}
-var KEY='vane.rehearsal.v1', SUPPLY=1e9, HOUR=3600, DAY=86400;
+var KEY='vane.rehearsal.v3', SUPPLY=1e9, HOUR=3600, DAY=86400;
 var Q=null,VIA='',SEL=null,SPEED=1,A=[],T=Math.floor(Date.now()/1000),SLOT=Math.floor(T/HOUR),DSLOT=Math.floor(T/DAY);
 
 // ---------- helpers ----------
