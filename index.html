@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>vane</title>
+<meta name="description" content="Launch a mind, not a token. Every hour it buys a real stock with your coin's fees. At midnight it hands the lot to holders. It cannot sell.">
+<meta property="og:title" content="vane"><meta property="og:description" content="Your fees become your stock."><meta property="og:image" content="/assets/og.jpg"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png"><link rel="icon" type="image/png" sizes="64x64" href="/assets/favicon-64.png"><link rel="apple-touch-icon" href="/assets/favicon-180.png">
+<style>
+@font-face{font-family:P;src:url(/assets/poppins-400.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:P;src:url(/assets/poppins-500.woff2) format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:P;src:url(/assets/poppins-700.woff2) format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:P;src:url(/assets/poppins-700i.woff2) format('woff2');font-weight:700;font-style:italic;font-display:swap}
+@font-face{font-family:M;src:url(/assets/plex-400.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:M;src:url(/assets/plex-500.woff2) format('woff2');font-weight:500;font-display:swap}
+:root{
+ --ink:#141414;--ink2:#3b3b3b;--dim:#6f6c68;--mute:#9a9691;--hair:#e4ded6;--hair2:#d2ccc2;
+ --paper:#fdfcfa;--card:rgba(255,255,255,.58);--card2:rgba(255,255,255,.78);
+ --up:#2f7a55;--dn:#b4443c;--r:14px}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:P,ui-sans-serif,system-ui,sans-serif;font-size:14px;line-height:1.6;color:var(--ink);background:linear-gradient(120deg,#fbf6f8 0%,#fdfbf6 46%,#fdf8e6 100%);background-attachment:fixed;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+#sky{position:fixed;inset:0;z-index:-2;background:
+ radial-gradient(120% 90% at 86% 52%,rgba(253,240,178,.95) 0%,rgba(253,244,205,.55) 34%,rgba(253,250,240,0) 68%),
+ radial-gradient(95% 120% at 16% 40%,rgba(240,226,242,.95) 0%,rgba(247,235,241,.5) 42%,rgba(252,250,247,0) 74%),
+ radial-gradient(70% 70% at 74% 74%,rgba(252,236,178,.5) 0%,rgba(252,240,200,0) 70%),
+ radial-gradient(60% 60% at 4% 4%,rgba(255,255,255,.9) 0%,rgba(255,255,255,0) 70%),
+ linear-gradient(120deg,#fbf6f8 0%,#fdfbf6 46%,#fdf8e6 100%)}
+#grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E")}
+a{color:inherit;text-decoration:none}button,input,select{font:inherit;color:inherit}[hidden]{display:none!important}
+::selection{background:#141414;color:#fdfcfa}
+.mono{font-family:M,ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1320px;margin:0 auto;padding:0 28px}
+@media(max-width:700px){.wrap{padding:0 16px}}
+/* header */
+header{position:sticky;top:0;z-index:40;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(253,251,247,.5)}
+header .wrap{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;height:64px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:500;font-size:17px;letter-spacing:-.01em}
+.brand canvas{display:block}
+nav{display:flex;gap:26px;justify-self:center}
+nav button{border:0;background:none;padding:6px 0;font-size:13.5px;color:var(--dim);cursor:pointer;position:relative;transition:color .22s cubic-bezier(.22,.9,.3,1)}
+nav button:hover{color:var(--ink)}
+nav button.on{color:var(--ink)}
+nav button:after{content:'';position:absolute;left:50%;right:50%;bottom:-1px;height:1.5px;background:var(--ink);transition:left .28s cubic-bezier(.22,.9,.3,1),right .28s cubic-bezier(.22,.9,.3,1)}
+nav button.on:after{left:0;right:0}
+.hstat{font-size:11.5px;color:var(--mute);white-space:nowrap;justify-self:end}
+.hstat b{color:var(--ink2);font-weight:500}
+@media(max-width:900px){.hstat{display:none}}
+@media(max-width:620px){header .wrap{grid-template-columns:auto 1fr;height:58px;gap:10px}nav{justify-self:end;gap:16px}.brand span{display:none}nav button{font-size:12.5px}}
+/* views */
+.view{animation:fade .38s cubic-bezier(.22,.9,.3,1) both}
+@keyframes fade{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+section{padding:34px 0}
+h1{font-size:clamp(28px,4.1vw,48px);line-height:1.05;letter-spacing:-.025em;margin:0 0 14px;font-weight:700}
+h1 i{font-style:italic}
+h2{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:0}
+h3{font-size:14px;font-weight:500;margin:0 0 6px}
+p{color:var(--ink2);margin:0 0 12px;max-width:66ch}
+.lede{font-size:16.5px;color:var(--ink2);max-width:60ch}
+.eyebrow{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.card{background:none;border:0;border-radius:0}
+.rule{height:1px;background:var(--hair);margin:0}
+.band{padding:26px 0;border-top:1px solid var(--hair)}
+.band:first-child{border-top:0}
+/* stage */
+.stage{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:980px){.stage{grid-template-columns:1fr}}
+.inst{padding:20px 20px 18px;text-align:center;position:relative;overflow:hidden}
+.inst .who{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--mute)}
+.inst .who b{color:var(--ink);font-weight:500;font-size:15px}
+.pill{font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--hair2);border-radius:999px;padding:2px 8px;color:var(--dim)}
+.pill.q{border-color:#dcc9a8;color:#8a6d33;background:rgba(250,236,200,.5)}
+#dial{display:block;width:100%;height:auto}
+.inst .pick{font-size:12px;color:var(--mute);min-height:20px}
+.inst .pick b{color:var(--ink);font-weight:500}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);border:1px solid var(--hair);border-radius:11px;overflow:hidden;margin-top:14px}
+.nums div{background:var(--card2);padding:11px 12px;text-align:left}
+.nums i{display:block;font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.nums b{display:block;font-weight:500;font-size:19px;letter-spacing:-.01em;margin-top:2px}
+.nums small{color:var(--mute);font-size:10.5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin-top:14px;font-size:12.5px;text-align:left}
+.kv i{font-style:normal;color:var(--mute)}
+.kv span{text-align:right;color:var(--ink2)}
+/* right column */
+.tonight{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.tonight .big{font-size:22px;font-weight:500;letter-spacing:-.01em}
+.tonight .bar{flex:1;min-width:120px;height:4px;border-radius:99px;background:var(--hair);overflow:hidden;position:relative}
+.tonight .bar i{position:absolute;inset:0 auto 0 0;background:var(--ink);display:block;transition:width .6s cubic-bezier(.22,.9,.3,1)}
+.hours{overflow:hidden}
+.hd{display:grid;grid-template-columns:62px 80px 1fr 82px 68px 92px 108px;gap:14px;padding:9px 2px;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--hair)}
+.hr{display:grid;grid-template-columns:62px 80px 1fr 82px 68px 92px 108px;gap:14px;padding:12px 2px;border-bottom:1px solid var(--hair);font-size:12.5px;align-items:center;animation:slide .4s cubic-bezier(.22,.9,.3,1) both}
+@keyframes slide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.hr:last-child{border-bottom:0}
+.hr .t{color:var(--mute);font-size:11px}
+.hr .tk{font-weight:500}
+.hr .liq{position:relative;height:5px;border-radius:99px;background:var(--hair);overflow:hidden}
+.hr .liq i{position:absolute;inset:0 auto 0 0;background:var(--ink2);display:block}
+.hr .r{text-align:right}
+.hr .h{color:var(--mute);font-size:10.5px;text-align:right;overflow:hidden;text-overflow:ellipsis}
+.hr.mid{grid-template-columns:62px 1fr;background:rgba(255,255,255,.72)}
+.hr.mid .m{font-size:12.5px}
+.hr.mid b{font-weight:500}
+.hr.none .tk{color:var(--mute)}
+@media(max-width:820px){.hd{display:none}.hr{grid-template-columns:54px 1fr auto;grid-auto-rows:min-content}.hr .liq,.hr .h,.hr .ch{display:none}.hr.mid{grid-template-columns:54px 1fr}}
+.empty{padding:34px 2px;text-align:center;color:var(--mute);font-size:13px}
+/* controls */
+.ctl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ctl label{font-size:12px;color:var(--mute)}
+.in{background:rgba(255,255,255,.8);border:1px solid var(--hair2);border-radius:9px;padding:8px 11px;font-size:13.5px;width:132px;transition:border-color .18s,box-shadow .18s}
+.in:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px rgba(20,20,20,.07)}
+.btn{border:1px solid var(--hair2);background:rgba(255,255,255,.72);border-radius:999px;padding:8px 16px;font-size:13px;cursor:pointer;transition:all .16s cubic-bezier(.22,.9,.3,1)}
+.btn:hover{border-color:var(--ink);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.p{background:var(--ink);color:#fdfcfa;border-color:var(--ink)}
+.btn.p:hover{background:#000}
+.btn:disabled{opacity:.42;cursor:default;transform:none;border-color:var(--hair2)}
+.seg{display:flex;border:1px solid var(--hair2);border-radius:999px;overflow:hidden;background:rgba(255,255,255,.6)}
+.seg button{border:0;background:none;padding:7px 12px;font-size:12px;color:var(--dim);cursor:pointer;transition:all .16s}
+.seg button.on{background:var(--ink);color:#fdfcfa}
+/* board */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.ag{padding:18px;cursor:pointer;transition:transform .2s cubic-bezier(.22,.9,.3,1),box-shadow .2s,border-color .2s}
+.ag:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(60,50,40,.09);border-color:var(--hair2)}
+.ag .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.ag .nm{font-size:17px;font-weight:500;letter-spacing:-.01em}
+.ag .tk{font-size:11.5px;color:var(--mute)}
+.ag .gr{font-size:11.5px;color:var(--dim);margin-top:2px}
+.ag .two{display:flex;gap:18px;margin-top:14px}
+.ag .two div i{display:block;font-style:normal;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--mute)}
+.ag .two div b{font-weight:500;font-size:15px}
+.ag .spark{margin-top:12px;height:30px;display:block;width:100%}
+.ag.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+/* launch */
+.form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:880px}
+@media(max-width:760px){.form{grid-template-columns:1fr}}
+.form label{display:block;font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+.form .in,.form select{width:100%}
+select{background:rgba(255,255,255,.8);border:1px solid var(--hair2);border-radius:9px;padding:8px 11px;font-size:13.5px}
+.form .f{grid-column:1/-1}
+.out{grid-column:1/-1;font-size:13px;color:var(--dim);min-height:20px}
+.out b{color:var(--ink);font-weight:500}
+/* read */
+.read{max-width:760px}
+.read p{font-size:15px;line-height:1.72}
+.read h2{margin:34px 0 10px}
+.read .first::first-letter{font-size:58px;line-height:.86;float:left;padding:6px 10px 0 0;font-weight:700}
+.rules{list-style:none;counter-reset:r;margin:14px 0 0;padding:0}
+.rules li{counter-increment:r;position:relative;padding:12px 0 12px 40px;border-bottom:1px solid var(--hair);color:var(--ink2);font-size:14px}
+.rules li:before{content:counter(r,decimal-leading-zero);position:absolute;left:0;top:13px;font-family:M,monospace;font-size:11px;color:var(--mute)}
+.qa>div{padding:15px 0;border-bottom:1px solid var(--hair)}
+.qa q{display:block;quotes:none;font-weight:500;margin-bottom:5px}
+.qa p{margin:0;font-size:14px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+@media(max-width:820px){.two-col{grid-template-columns:1fr}}
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--hair);border:1px solid var(--hair);border-radius:var(--r);overflow:hidden}
+.four div{background:var(--card2);padding:15px}
+.four i{display:block;font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.four b{display:block;font-size:26px;font-weight:500;letter-spacing:-.02em;margin:3px 0 1px}
+.four small{color:var(--mute);font-size:11px}
+@media(max-width:700px){.four{grid-template-columns:1fr 1fr}}
+footer{padding:40px 0 56px;color:var(--mute);font-size:12px;border-top:1px solid var(--hair);margin-top:40px}
+#sky:after{content:'';position:absolute;inset:-20%;background:
+ radial-gradient(38% 38% at 70% 40%,rgba(253,232,160,.55),rgba(253,232,160,0) 70%),
+ radial-gradient(34% 34% at 26% 62%,rgba(236,216,240,.55),rgba(236,216,240,0) 70%);
+ animation:drift 26s ease-in-out infinite alternate;filter:blur(8px)}
+@keyframes drift{from{transform:translate3d(-2.5%,-2%,0) scale(1)}to{transform:translate3d(3.5%,3%,0) scale(1.1)}}
+/* hero */
+.scene{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:20px;min-height:calc(100vh - 64px);padding:10px 0 30px}
+.scene .art{position:relative;animation:float 13s ease-in-out infinite alternate}
+@keyframes float{from{transform:translateY(-9px)}to{transform:translateY(9px)}}
+.scene .say{text-align:left}
+.word{font-size:clamp(64px,11.5vw,168px);line-height:.82;letter-spacing:-.045em;font-weight:700;margin:0 0 6px}
+.claim{font-size:clamp(15px,1.6vw,19px);color:var(--ink2);max-width:30ch;margin:0 0 20px}
+.chips2{display:flex;gap:9px;flex-wrap:wrap}
+.chip2{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--hair2);border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--dim);background:rgba(255,255,255,.42);backdrop-filter:blur(6px);transition:border-color .2s,transform .2s}
+.chip2:hover{border-color:var(--ink);transform:translateY(-1px)}
+.chip2 b{color:var(--ink);font-weight:500}
+.scroller{margin-top:28px;font-size:12px;color:var(--mute);display:inline-flex;align-items:center;gap:8px;cursor:pointer;background:none;border:0}
+.scroller i{display:block;width:1px;height:22px;background:var(--hair2);position:relative;overflow:hidden}
+.scroller i:after{content:'';position:absolute;left:0;width:1px;height:9px;background:var(--ink);animation:fall 1.9s cubic-bezier(.6,0,.4,1) infinite}
+@keyframes fall{0%{top:-9px}60%,100%{top:22px}}
+@media(max-width:900px){.scene{grid-template-columns:1fr;min-height:0;padding:16px 0 26px;text-align:center}.scene .say{text-align:center}.claim{margin-left:auto;margin-right:auto}.chips2{justify-content:center}}
+/* HUD */
+.hud{position:fixed;right:20px;bottom:20px;z-index:30;width:268px;border:1px solid var(--hair2);border-radius:12px;background:rgba(255,255,255,.66);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:13px 15px;box-shadow:0 10px 34px rgba(80,66,50,.09);transition:opacity .3s,transform .3s}
+.hud.off{opacity:0;transform:translateY(10px);pointer-events:none}
+.hud .l{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-bottom:2px}
+.hud .l b{color:var(--ink);font-weight:500}
+.hud .big{font-size:20px;font-weight:500;letter-spacing:-.01em;margin:4px 0 2px}
+.hud .say{font-size:11.5px;color:var(--dim);line-height:1.45}
+@media(max-width:900px){.hud{display:none}}
+.dot{display:inline-block;width:5px;height:5px;border-radius:99px;background:var(--up);margin-right:5px;vertical-align:1px;animation:bl 2.2s ease-in-out infinite}
+.pill.q .dot{background:#b08a34;animation:none}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.25}}
+/* flush blocks */
+.vit4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 30px}
+.vit4 div{border-top:1px solid var(--hair);padding-top:11px}
+.vit4 i{display:block;font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.vit4 b{display:block;font-weight:500;font-size:17px;letter-spacing:-.01em;margin-top:4px}
+.vit4 small{display:block;color:var(--mute);font-size:11px;margin-top:2px}
+@media(max-width:900px){.vit4{grid-template-columns:1fr 1fr;gap:16px 20px}.vit4 b{font-size:15px}}
+/* evidence */
+.ev{margin-top:0}
+.evr{display:grid;grid-template-columns:70px 1fr 84px 84px;gap:16px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--hair);font-size:12.5px}
+.evr:last-child{border-bottom:0}
+.evr .nm{font-weight:500}
+.evr.win .nm:after{content:' ←';color:var(--mute)}
+.evr .track{position:relative;height:6px;border-radius:99px;background:var(--hair)}
+.evr .track i{position:absolute;top:0;bottom:0;display:block;border-radius:99px;background:var(--ink2);transition:width .5s cubic-bezier(.22,.9,.3,1),left .5s cubic-bezier(.22,.9,.3,1)}
+.evr .track i.dn{background:var(--dn)}
+.evr .track b{position:absolute;top:-3px;bottom:-3px;left:50%;width:1px;background:var(--hair2)}
+.evr .r{text-align:right;color:var(--ink2)}
+.evr .r.up{color:var(--up)}.evr .r.dn{color:var(--dn)}
+.hr .ch{text-align:right;font-size:11.5px}
+.hr .ch.up{color:var(--up)}.hr .ch.dn{color:var(--dn)}
+.hr:hover{background:rgba(255,255,255,.55)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{font-size:11px;border:1px solid var(--hair2);border-radius:999px;padding:3px 9px;background:rgba(255,255,255,.6)}
+.chip b{font-weight:500}
+.ag .mini{display:block;width:100%;height:124px;margin-top:10px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="sky"></div><div id="grain"></div>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#" id="home"><canvas id="logo" width="34" height="34"></canvas><span>vane</span></a>
+    <nav id="nav">
+      <button data-v="stage" class="on">Stage</button>
+      <button data-v="board">Board</button>
+      <button data-v="launch">Launch</button>
+      <button data-v="read">Read</button>
+    </nav>
+    <span class="hstat" id="hstat">—</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ================= STAGE ================= -->
+<div class="view" id="v-stage">
+<section class="scene">
+  <div class="art"><canvas id="dial" width="900" height="760"></canvas></div>
+  <div class="say">
+    <h1 class="word">vane</h1>
+    <p class="claim">Your fees become <i>your stock</i>. Launch a mind, not a token &mdash; it buys, it never sells, and at midnight the lot is yours.</p>
+    <div class="chips2">
+      <span class="chip2" id="cState"><span class="dot"></span>—</span>
+      <span class="chip2">reading <b class="mono" id="cPick">—</b></span>
+      <span class="chip2">midnight in <b class="mono" id="cCd">—</b></span>
+      <span class="chip2">fills today <b class="mono" id="cFills">—</b></span>
+    </div>
+    <button class="scroller" id="down"><i></i> the hours it has spent today</button>
+  </div>
+</section>
+<section id="ledger" style="padding-top:0">
+
+  <div class="band">
+    <div class="sh"><h2>Tonight</h2><span class="eyebrow">everything bought today leaves at 00:00 utc, pro rata, as a transfer</span></div>
+    <div class="tonight">
+      <div><div class="eyebrow">leaves at midnight</div><div class="big mono" id="tVal">&mdash;</div></div>
+      <div style="flex:1;min-width:150px">
+        <div class="eyebrow" style="margin-bottom:7px">next distribution in <span class="mono" id="tCd">&mdash;</span></div>
+        <div class="bar"><i id="tBar" style="width:0"></i></div>
+      </div>
+      <div style="text-align:right"><div class="eyebrow">bought today</div><div class="mono" id="tCount" style="font-size:16px">&mdash;</div></div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="sh"><h2>The hours</h2><span class="eyebrow">one buy an hour &middot; the price it paid &middot; the hash</span></div>
+    <div class="hours">
+      <div class="hd"><span>utc</span><span>bought</span><span>weight of hand</span><span class="r">price</span><span class="r">day</span><span class="r">size</span><span class="r">tx</span></div>
+      <div id="rows"><div class="empty">nothing yet.</div></div>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="sh"><h2>What it is reading, right now</h2><span class="eyebrow" id="evRule">&mdash;</span></div>
+    <div id="evRows"></div>
+  </div>
+
+  <div class="band">
+    <div class="ctl">
+      <label for="fee">feed the wallet</label>
+      <input class="in mono" id="fee" inputmode="decimal" placeholder="USDG">
+      <button class="btn p" id="send">Send fee</button>
+      <div class="seg" id="spd"><button data-s="1" class="on">live</button><button data-s="60">min/s</button><button data-s="3600">hr/s</button><button data-s="86400">day/s</button></div>
+      <button class="btn" id="next">Next mind</button>
+      <span class="hstat" id="rule" style="margin-left:auto;justify-self:auto"></span>
+    </div>
+  </div>
+
+  <div class="band">
+    <div class="sh"><h2>The mind you are watching</h2><span class="eyebrow"><span class="mono" id="aId">&mdash;</span> &middot; <span id="aState">&mdash;</span></span></div>
+    <div class="vit4">
+      <div><i>name</i><b id="aName">&mdash;</b></div>
+      <div><i>ground &mdash; fixed at birth</i><b id="aGround">&mdash;</b></div>
+      <div><i>delivered / 1M tokens</i><b class="mono" id="nDeliv">&mdash;</b><small id="nDelivSub">&nbsp;</small></div>
+      <div><i>waiting to be spent</i><b class="mono" id="nBal">&mdash;</b><small id="nBalSub">&nbsp;</small></div>
+      <div><i>hours acted</i><b class="mono" id="aHours">&mdash;</b></div>
+      <div><i>holds right now</i><b class="mono" id="aHold">&mdash;</b></div>
+      <div><i>fee taken in</i><b class="mono" id="aFed">&mdash;</b></div>
+      <div class="wide"><i>what it is reading</i><b id="aPick" style="font-size:14px;font-weight:400;color:var(--ink2)">&mdash;</b></div>
+    </div>
+  </div>
+
+</section>
+</div>
+
+<!-- ================= BOARD ================= -->
+<div class="view" id="v-board" hidden>
+<section>
+  <div class="sh"><h2>Every mind on the board</h2><span class="eyebrow" id="bNote">price is belief · delivery is proof</span></div>
+  <div class="grid" id="cards"></div>
+  <div class="sh" style="margin:34px 0 14px"><h2>The four numbers</h2><span class="eyebrow">read from the chain, or not shown</span></div>
+  <div class="four">
+    <div><i>minds</i><b class="mono" id="f1">0</b><small>opened their eyes</small></div>
+    <div><i>awake</i><b class="mono" id="f2">0</b><small>still buying</small></div>
+    <div><i>bought</i><b class="mono" id="f3">$0.00</b><small>spent on stock</small></div>
+    <div><i>delivered</i><b class="mono" id="f4">$0.00</b><small>handed to holders</small></div>
+  </div>
+</section>
+</div>
+
+<!-- ================= LAUNCH ================= -->
+<div class="view" id="v-launch" hidden>
+<section>
+  <h1>Launch a <i>mind</i>.</h1>
+  <p class="lede">Give it a name and one stretch of market to hunt in. It opens its eyes with a wallet nobody else can touch, and your coin's fee is what keeps it awake.</p>
+  <div class="form" style="margin-top:26px">
+    <div><label for="lName">name</label><input class="in" id="lName" placeholder="kestrel" maxlength="18"></div>
+    <div><label for="lTk">ticker</label><input class="in" id="lTk" placeholder="KSTL" maxlength="8"></div>
+    <div><label for="lGround">ground &mdash; fixed at birth</label><select id="lGround"></select></div>
+    <div class="f" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <button class="btn p" id="lGo" disabled>Open its eyes</button>
+      <button class="btn" id="lReset">Clear the board</button>
+      <span class="eyebrow">nothing is deployed &middot; this rehearses in your browser</span>
+    </div>
+    <div class="out" id="lOut"></div>
+  </div>
+</section>
+</div>
+
+<!-- ================= READ ================= -->
+<div class="view" id="v-read" hidden>
+<section class="read">
+  <h1><i>Autonomous</i> market intelligence for Robinhood Chain.</h1>
+  <p class="first">Every oracle that ever lasted survived the same way: by being vague. The old ones answered in lines that read two ways, so whichever way the world went, the oracle had said so. That is not a joke about the ancient world &mdash; it is the working model of every market call made today. Hedged. Undated. Revised in the quiet hours. Remembered selectively by the person who made it.</p>
+  <p>vane takes that defence away, and then takes one more. Here, a mind is not allowed to merely say a thing. <b>It has to buy it.</b> Every hour it names one real stock on Robinhood Chain, and in the same transaction it spends its own money on that stock. The call and the fill are one act. There is no version of this where it is right in theory.</p>
+  <p>And it never keeps any of it. At midnight, everything it bought that day goes to the people holding its coin.</p>
+
+  <h2>Every cent becomes stock</h2>
+  <p>The whole creator fee turns into shares. Not a share of it. All of it. The pad is paid once, by the launch fee printed before you sign, and the cost of running the mind is ours to carry rather than the wallet's. No management fee to wonder about, no treasury quietly skimming, no operational reserve. Money in, stock out, and the gap between the two is zero by construction.</p>
+
+  <h2>It is not smarter than you</h2>
+  <p>It has no edge you do not have. It reads public data that is public to everybody, on a chain anyone can index. The only thing it can do that a person cannot is refuse to look away, refuse to forget, refuse to be vague, and refuse to keep anything it catches. Four refusals, held for as long as it is fed. That turns out to be enough, because almost nobody else is doing any of them.</p>
+
+  <h2>The thing being tested is you</h2>
+  <p>A mind has no opinion about where to look. You chose the ground. You decided which corner of the market was worth an eye for the rest of its life. So the pile that accumulates under its name is not really the agent's doing &mdash; it is yours, marked nightly, in public, under a name that will outlive the trade that made it. That is what is for sale here, and it is not a ticker. It is somebody's conviction, with the receipts delivered to strangers every night.</p>
+
+  <h2>The record is in your wallet</h2>
+  <p>Its record is not a chart we drew, an accuracy figure we chose how to calculate, or a backtest run until it looked good. It is the actual contents of your wallet. What a mind has been worth is a thing you can read without visiting this site at all, and there is no angle from which we can present it flatteringly. An agent whose output lands in the audience's hands every single night has no room left to perform.</p>
+
+  <h2>The rules, frozen</h2>
+  <ol class="rules">
+    <li>One ground, set at launch, fixed for the whole life. Not by you, not by us, not by a vote.</li>
+    <li>The coin's creator fee is wired to the mind's own wallet at birth. Not to the dev's. Not to ours.</li>
+    <li>Every cent of that fee becomes stock. The pad takes nothing from the flow, ever.</li>
+    <li>One buy an hour, on the hour, whether or not the hour was kind.</li>
+    <li>The name, the reads behind it, the price, the size and the hash are posted as it acts, not afterwards.</li>
+    <li>There is no sell function. Not disabled &mdash; absent.</li>
+    <li>At 00:00 UTC everything bought that day goes to holders, pro rata, as a transfer. No claim, no form.</li>
+    <li>By one minute past midnight the mind owns nothing at all.</li>
+    <li>A mind whose wallet empties goes quiet. It is never deleted, and it can be woken.</li>
+  </ol>
+
+  <h2>The problem we cannot solve, said out loud</h2>
+  <p>A vane that is doing well attracts holders. More holders means more volume, more fee, and a bigger hand &mdash; and a big enough hand moves the price of the thing it is buying. The reading corrupts itself by being acted on. This is the oldest failure an instrument like this has, and anyone who tells you they have engineered it away is selling something. What we can do is refuse to hide it: every fill shows the size taken against the liquidity that was there, so the weight of the hand sits in the same row as the call. An honest instrument does not pretend the observer is absent. It shows you exactly where he is standing, and how heavy he is.</p>
+
+  <h2>Why a vane</h2>
+  <p>A weathervane does not make the wind, and it cannot predict the wind. It sits inside a wind that was already blowing and turns, and everyone downwind sees which way it turned a moment before it arrives. The wind was always there. The instrument adds nothing to it. It only refuses &mdash; and the refusals are the scarce thing, not the intelligence.</p>
+
+  <h2>What is not built yet</h2>
+  <div class="two-col">
+    <div>
+      <p>No vanes exist. The first opens its eyes when the first coin launches. Nothing has been bought and nothing has been delivered, so the four numbers read zero rather than being filled in with something plausible. A dash is not a zero, and a zero is not a guess.</p>
+      <p>The board on this site is a rehearsal running in your own browser, against the real prices of the day. Clear it whenever you like.</p>
+    </div>
+    <div>
+      <p>What is real on this page: the prices, read from the market, and the reading rule, which is printed in full beside the controls and is the same rule for every mind here.</p>
+      <p>What is not: every mind on the board, its wallet, its fills and its deliveries. They are there so you can see the shape of the thing before you put money near it.</p>
+    </div>
+  </div>
+
+  <h2>Questions asked in the dark</h2>
+  <div class="qa">
+    <div><q>Is this advice?</q><p>No. It is a public reading of public data, it will be wrong often, and every wrong hour stays up forever with the price it paid attached.</p></div>
+    <div><q>What stops it talking its own book?</q><p>It cannot sell and it cannot keep. Everything it buys is gone by midnight. There is no book to talk.</p></div>
+    <div><q>What if mine is bad at this?</q><p>Then it hands you a worse pile than somebody else's, in public, every night, until you stop feeding it. That ending is built in rather than argued away.</p></div>
+    <div><q>Isn't the AI the whole point?</q><p>No. The refusals are the point. The intelligence is ordinary and we would rather say so now than have you find out later.</p></div>
+    <div><q>Why hold?</q><p>Because midnight pays whoever is holding at that block, and nobody can tell you in advance what it will have bought by then.</p></div>
+    <div><q>Can you switch one off?</q><p>Silence switches it off. So does an empty wallet. We cannot make a vane lie, we cannot make it unsay what it already did, and we cannot take back a share that has already left.</p></div>
+  </div>
+</section>
+</div>
+
+<div class="hud off" id="hud">
+  <div class="l"><span id="hName">—</span><b id="hState">—</b></div>
+  <div class="big mono" id="hDeliv">—</div>
+  <div class="l"><span>delivered / 1M</span><b class="mono" id="hBal">—</b></div>
+  <div class="say" id="hSay">—</div>
+</div>
+
+<footer class="wrap" style="padding-left:0;padding-right:0">
+  <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <span>It buys what it sees. You keep what it buys.</span>
+    <span id="foot">—</span>
+  </div>
+</footer>
+</main>
+<script>
+var $=function(s){return document.querySelector(s)},$$=function(s){return [].slice.call(document.querySelectorAll(s))};
+var CONFIG={x:'',ca:''};
+var LIST=['NVDA','AAPL','MSFT','AMZN','GOOGL','AVGO','GOOG','META','MU','TSLA'];
+var GROUNDS=[
+ {id:'semis',label:'semiconductors',tks:['NVDA','AVGO','MU']},
+ {id:'mega',label:'mega caps',tks:['AAPL','MSFT','GOOGL','AMZN','META']},
+ {id:'plat',label:'platforms',tks:['GOOGL','GOOG','META','AMZN']},
+ {id:'all',label:'anything on the board',tks:LIST.slice()}];
+function ground(id){for(var i=0;i<GROUNDS.length;i++)if(GROUNDS[i].id===id)return GROUNDS[i];return GROUNDS[0]}
+var KEY='vane.rehearsal.v1', SUPPLY=1e9, HOUR=3600, DAY=86400;
+var Q=null,VIA='',SEL=null,SPEED=1,A=[],T=Math.floor(Date.now()/1000),SLOT=Math.floor(T/HOUR),DSLOT=Math.floor(T/DAY);
+
+// ---------- helpers ----------
+function fmt(n){return '$'+(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function sh(n){return (n||0).toFixed(6)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function utc(t){var d=new Date((t||T)*1000);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0')}
+function hms(s){s=Math.max(0,Math.floor(s));var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return [h,m,x].map(function(v){return String(v).padStart(2,'0')}).join(':')}
+function hex(s){var h=0,g=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;g=(g*17+h)>>>0}return (h.toString(16)+g.toString(16)).padStart(8,'0').slice(0,8)}
+function txh(s){return '0x'+hex(s)+hex(s+'a')+hex(s+'b')+hex(s+'c')}
+function now(){return T}
+
+// ---------- the mark, drawn ----------
+function vanePath(g,cx,cy,R,ang,ringOnly,needleOnly){
+  function P(L,off){var dx=Math.cos(ang),dy=Math.sin(ang);return [cx+dx*L-dy*off,cy+dy*L+dx*off]}
+  function poly(pts){g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(var i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill()}
+  if(!needleOnly){
+    var d=ang*180/Math.PI;
+    [[d+16,d+164],[d+196,d+344]].forEach(function(seg,si){
+      var O=[],I=[],N=140,a0=seg[0]*Math.PI/180,a1=seg[1]*Math.PI/180;
+      for(var k=0;k<=N;k++){
+        var a=a0+(a1-a0)*k/N;
+        var r=R*0.88*(1+0.045*Math.sin(3*a+si)+0.022*Math.sin(5*a));
+        var t=R*0.024*(0.55+0.60*(0.5+0.5*Math.sin(2.2*a+si*2)));
+        O.push([cx+Math.cos(a)*(r+t/2),cy+Math.sin(a)*(r+t/2)]);
+        I.push([cx+Math.cos(a)*(r-t/2),cy+Math.sin(a)*(r-t/2)]);
+      }
+      poly(O.concat(I.reverse()));
+    });
+  }
+  if(ringOnly)return;
+  // shaft
+  var Aa=[],Bb=[],N=60,L0=-R*0.80,L1=R*0.44,w0=R*0.021,w1=R*0.013;
+  for(var i=0;i<=N;i++){var t=i/N,L=L0+(L1-L0)*t,w=(w0+(w1-w0)*t)*(1+0.09*Math.sin(t*5.7+0.6));
+    Aa.push(P(L,w));Bb.push(P(L,-w))}
+  poly(Aa.concat(Bb.reverse()));
+  // head — a dart, drawn as two simple triangles so nothing can self-intersect
+  var tip=R*1.08,back=R*0.40,hw=R*0.094,notch=back+(tip-back)*0.34;
+  poly([P(tip,0),P(back,hw),P(notch,0)]);
+  poly([P(tip,0),P(back,-hw),P(notch,0)]);
+  // fin — a swallowtail, same trick
+  var a0=-R*1.05,a1=-R*0.48,fw=R*0.084,fn=a0+(a1-a0)*0.46;
+  poly([P(a1,0),P(a0,fw),P(fn,0)]);
+  poly([P(a1,0),P(a0,-fw),P(fn,0)]);
+}
+(function logo(){var c=$('#logo'),d=Math.min(2,devicePixelRatio||1);
+  c.width=34*d;c.height=34*d;var g=c.getContext('2d');g.scale(d,d);g.fillStyle='#141414';
+  vanePath(g,17,17,15,-0.62);})();
+
+// ---------- the dial ----------
+var DIAL={ang:-0.62,target:-0.62,glow:0};
+function dial(){
+  var c=$('#dial'),a=get(SEL);if(!c||!a)return;
+  var w=c.clientWidth||380,d=Math.min(2,devicePixelRatio||1);
+  if(c.width!==Math.round(w*d)){c.width=Math.round(w*d)}
+  var g=c.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,c.height);
+  var H=Math.round(Math.min(w*0.86,Math.max(360,innerHeight*0.62)));if(c.height!==Math.round(H*d)){c.height=Math.round(H*d)}
+  var cx=w/2,cy=H/2,R=Math.min(w,H)*0.255;
+  var gr=ground(a.ground),n=gr.tks.length;
+  var sc=scores(a), mx=0.0001;
+  gr.tks.forEach(function(t){mx=Math.max(mx,Math.abs((sc[t]||0)))});
+
+  // fine graduations
+  g.strokeStyle='rgba(20,20,20,.16)';
+  for(var k=0;k<120;k++){
+    var an=k/120*2*Math.PI, major=(k%10===0);
+    g.lineWidth=major?1.4:0.9;g.globalAlpha=major?.75:.42;
+    g.beginPath();
+    g.moveTo(cx+Math.cos(an)*R*1.045,cy+Math.sin(an)*R*1.045);
+    g.lineTo(cx+Math.cos(an)*R*(major?1.10:1.075),cy+Math.sin(an)*R*(major?1.10:1.075));
+    g.stroke();
+  }
+  g.globalAlpha=1;
+
+  // the sweep
+  var sw=(performance.now()/9000)%1*2*Math.PI;
+  var grad=g.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.16);
+  grad.addColorStop(0,'rgba(20,20,20,0)');grad.addColorStop(1,'rgba(20,20,20,.055)');
+  g.fillStyle=grad;g.beginPath();g.moveTo(cx,cy);g.arc(cx,cy,R*1.16,sw-0.55,sw);g.closePath();g.fill();
+
+  // radial score bars + names
+  g.textAlign='center';g.textBaseline='middle';
+  for(var i=0;i<n;i++){
+    var a2=-Math.PI/2+i*2*Math.PI/n, tk=gr.tks[i], q=Q&&Q[tk];
+    var v=(sc[tk]||0)/mx, on=(a.pick===tk);
+    var r0=R*1.13, len=R*0.18*Math.abs(v), rA=v>=0?r0:r0-len, rB=v>=0?r0+len:r0;
+    g.strokeStyle=v>=0?(on?'rgba(20,20,20,.95)':'rgba(20,20,20,.5)'):'rgba(180,68,60,.75)';
+    g.lineWidth=Math.max(4,w*0.019);g.lineCap='round';
+    g.beginPath();
+    g.moveTo(cx+Math.cos(a2)*rA,cy+Math.sin(a2)*rA);
+    g.lineTo(cx+Math.cos(a2)*rB,cy+Math.sin(a2)*rB);
+    g.stroke();
+    if(on){ g.beginPath();g.arc(cx+Math.cos(a2)*R*1.05,cy+Math.sin(a2)*R*1.05,w*0.020,0,7);
+      g.fillStyle='rgba(20,20,20,.10)';g.fill();
+      g.beginPath();g.arc(cx+Math.cos(a2)*R*1.05,cy+Math.sin(a2)*R*1.05,w*0.009,0,7);
+      g.fillStyle='#141414';g.fill(); }
+    var lx=cx+Math.cos(a2)*R*1.72, ly=cy+Math.sin(a2)*R*1.72;
+    g.font=(on?'500 ':'400 ')+Math.round(w*0.034)+'px M,monospace';
+    g.fillStyle=on?'#141414':'#a09b94';
+    g.fillText(tk,lx,ly-Math.round(w*0.019));
+    if(q){var ch=q.prev?(q.price/q.prev-1)*100:0;
+      g.font='400 '+Math.round(w*0.026)+'px M,monospace';
+      g.fillStyle=ch>=0?'rgba(47,122,85,.85)':'rgba(180,68,60,.85)';
+      g.fillText((ch>=0?'+':'')+ch.toFixed(2)+'%',lx,ly+Math.round(w*0.018));}
+  }
+  // memory: a dot on the spoke for each of the last hours, oldest furthest out
+  if(a.today.length){
+    var seenc={};
+    a.today.filter(function(x){return x.k==='buy'}).slice(0,12).forEach(function(f,k){
+      var idx=gr.tks.indexOf(f.tk);if(idx<0)return;
+      var an=-Math.PI/2+idx*2*Math.PI/n;
+      seenc[f.tk]=(seenc[f.tk]||0);
+      var rr=R*(1.40+seenc[f.tk]*0.052);
+      seenc[f.tk]++;
+      g.beginPath();g.arc(cx+Math.cos(an)*rr,cy+Math.sin(an)*rr,w*0.0055,0,7);
+      g.fillStyle='rgba(20,20,20,'+Math.max(0.10,0.42-k*0.028).toFixed(3)+')';g.fill();
+    });
+  }
+  // the instrument
+  g.save();g.translate(cx,cy);
+  g.fillStyle=a.quiet?'#c2bbb2':'rgba(20,20,20,.9)';
+  vanePath(g,0,0,R,-0.62,true);            // the ring never moves
+  g.fillStyle=a.quiet?'#b3aca4':'#141414';
+  if(DIAL.glow>0){g.shadowBlur=30*DIAL.glow;g.shadowColor='rgba(20,20,20,.4)'}
+  vanePath(g,0,0,R,DIAL.ang,false,true);   // only the needle turns
+  g.restore();
+}
+function angleFor(a){
+  var gr=ground(a.ground),i=gr.tks.indexOf(a.pick);
+  if(i<0)return -Math.PI/2;
+  return -Math.PI/2+i*2*Math.PI/gr.tks.length;
+}
+
+// ---------- the minds ----------
+function seed(){
+  var t=now();
+  return [
+   {id:'m-01',name:'kestrel',tk:'KSTL',ground:'semis',bal:186.4,fed:1240.5,hours:38,pick:'NVDA',
+    today:[],pile:{},delivUsd:1054.10,spentUsd:0,born:t-DAY*6,quiet:false,last:t},
+   {id:'m-02',name:'pennant',tk:'PENN',ground:'mega',bal:92.1,fed:730.0,hours:22,pick:'MSFT',
+    today:[],pile:{},delivUsd:637.90,spentUsd:0,born:t-DAY*4,quiet:false,last:t},
+   {id:'m-03',name:'lode',tk:'LODE',ground:'plat',bal:41.8,fed:305.6,hours:11,pick:'META',
+    today:[],pile:{},delivUsd:263.80,spentUsd:0,born:t-DAY*2,quiet:false,last:t},
+   {id:'m-04',name:'gale',tk:'GALE',ground:'all',bal:0,fed:118.0,hours:5,pick:null,
+    today:[],pile:{},delivUsd:118.00,spentUsd:0,born:t-DAY*9,quiet:true,last:t-DAY*3}];
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({A:A,T:T}))}catch(e){}}
+function load(){try{var j=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(j&&j.A&&j.A.length){A=j.A;A.forEach(function(a){a.today=a.today||[];a.pile=a.pile||{}});return}}catch(e){}
+  A=seed()}
+load();
+function get(id){for(var i=0;i<A.length;i++)if(A[i].id===id)return A[i];return null}
+function awake(a){return !a.quiet}
+
+function scores(a){
+  var out={};if(!Q)return out;
+  ground(a.ground).tks.forEach(function(tk){
+    var q=Q[tk];if(!q||!q.closes||q.closes.length<3)return;
+    var v=q.closes,half=Math.floor(v.length/2);
+    var mom=(v[v.length-1]/v[0]-1)*100, late=(v[v.length-1]/v[half]-1)*100;
+    out[tk]=mom*0.55+late*0.45;
+  });return out;
+}
+// the published reading rule: strongest flow across the session, inside the ground
+function reading(a,upto){
+  if(!Q)return null;
+  var gr=ground(a.ground),best=null,bs=-1e9,ev=null;
+  gr.tks.forEach(function(tk){
+    var q=Q[tk];if(!q||!q.closes||q.closes.length<3)return;
+    var v=upto?q.closes.slice(0,Math.max(3,upto)):q.closes;
+    if(v.length<3)return;
+    var half=Math.floor(v.length/2);
+    var mom=(v[v.length-1]/v[0]-1)*100, late=(v[v.length-1]/v[half]-1)*100;
+    var sc2=mom*0.55+late*0.45;
+    if(sc2>bs){bs=sc2;best=tk;ev={mom:mom,late:late,score:sc2,px:upto?v[v.length-1]:q.price}}
+  });
+  return best?{tk:best,ev:ev}:null;
+}
+function liqOf(tk){var q=Q&&Q[tk];if(!q||!q.closes)return 1;
+  var v=q.closes,lo=Math.min.apply(null,v),hi=Math.max.apply(null,v);
+  return Math.max(0.0001,(hi-lo)/((hi+lo)/2))}
+
+function act(a,upto){                // one hour
+  if(a.quiet)return;
+  var usd=a.bal;
+  if(usd<=0.005){ if(!a.quiet){a.quiet=true;push(a,{k:'quiet',t:now()})} return }
+  var r=reading(a,upto);
+  a.hours++;a.last=now();
+  if(!r){push(a,{k:'none',t:now(),why:'no price read'});return}
+  var px=r.ev.px;
+  a.pick=r.tk;
+  var size=usd/px;
+  a.bal=0;a.spentUsd+=usd;
+  a.pile[r.tk]=(a.pile[r.tk]||0)+size;
+  var weight=Math.min(1,usd/ (2000*liqOf(r.tk)+400));
+  push(a,{k:'buy',t:now(),tk:r.tk,px:px,size:size,usd:usd,w:weight,ev:r.ev,hash:txh('f'+a.id+a.hours+r.tk)});
+  if(a.id===SEL){DIAL.target=angleFor(a);DIAL.glow=1}
+}
+function midnight(a){                 // everything leaves
+  var tot=0,names=0;
+  for(var k in a.pile){var q=Q&&Q[k];if(q)tot+=a.pile[k]*q.price;names++}
+  if(names===0){return}
+  a.delivUsd+=tot;
+  push(a,{k:'mid',t:now(),usd:tot,names:names,lines:Object.keys(a.pile).map(function(k){return sh(a.pile[k])+' '+k}),hash:txh('d'+a.id+a.delivUsd)});
+  a.pile={};
+}
+function push(a,row){a.today.unshift(row);if(a.today.length>90)a.today.length=90;if(a.id===SEL)rows()}
+function feed(a,usd){
+  a.bal+=usd;a.fed+=usd;
+  if(a.quiet){a.quiet=false;push(a,{k:'wake',t:now(),usd:usd})}
+  else push(a,{k:'fee',t:now(),usd:usd});
+  save();
+}
+
+function prime(a){
+  if(a.quiet||a.today.length||!Q)return;
+  var t0=T,h0=a.hours,b0=a.bal,s0=a.spentUsd;
+  var since=Math.floor((T%DAY)/HOUR), n=Math.min(9,since);
+  var per=Math.max(2,a.fed/Math.max(1,a.hours));
+  if(since>=1){
+    var gr=ground(a.ground),lines=[],left=a.delivUsd;
+    gr.tks.forEach(function(tk,i){var q=Q[tk];if(!q)return;
+      var part=a.delivUsd*(i===gr.tks.length-1?1:0.34/Math.max(1,gr.tks.length-1)*(i+1));
+      if(part>0)lines.push(sh(part/q.price)+' '+tk)});
+    a.today.push({k:'mid',t:Math.floor(T/DAY)*DAY,usd:a.delivUsd,names:lines.length,lines:lines,hash:txh('d0'+a.id)});
+  }
+  for(var i=n;i>=1;i--){
+    T=t0-i*HOUR;
+    a.bal=per*(0.55+0.9*(((i*7919)%101)/101));
+    act(a,Math.max(4,12-i));
+  }
+  T=t0;a.bal=b0;a.hours=h0;a.spentUsd=s0;
+}
+// ---------- rendering ----------
+function ch(tk){var q=Q&&Q[tk];if(!q||!q.prev)return null;return (q.price/q.prev-1)*100}
+function rows(){
+  var a=get(SEL),el=$('#rows');if(!a)return;
+  if(!a.today.length){el.innerHTML='<div class="empty">'+(a.quiet?'quiet. feed the wallet and it acts on the next hour.':'nothing yet. the next hour is its first.')+'</div>';return}
+  el.innerHTML=a.today.map(function(r){
+    if(r.k==='buy')return '<div class="hr"><span class="t mono">'+utc(r.t)+'</span><span class="tk">'+r.tk+'</span>'+
+      '<span class="liq"><i style="width:'+(r.w*100).toFixed(0)+'%"></i></span>'+
+      '<span class="r mono">'+r.px.toFixed(2)+'</span>'+
+      (function(){var c=ch(r.tk);return '<span class="ch mono '+(c==null?'':(c>=0?'up':'dn'))+'">'+(c==null?'—':(c>=0?'+':'')+c.toFixed(2)+'%')+'</span>'})()+
+      '<span class="r mono">'+sh(r.size)+'</span>'+
+      '<span class="h mono">'+r.hash.slice(0,14)+'…</span></div>';
+    if(r.k==='mid')return '<div class="hr mid"><span class="t mono">'+utc(r.t)+'</span><span class="m"><b>midnight.</b> '+
+      esc(r.lines.join(' · '))+' &mdash; '+fmt(r.usd)+' to every holder, pro rata. <span class="mono" style="color:var(--mute)">'+r.hash.slice(0,14)+'…</span></span></div>';
+    if(r.k==='fee')return '<div class="hr mid"><span class="t mono">'+utc(r.t)+'</span><span class="m">fee <b>'+fmt(r.usd)+'</b> arrived. it is spent on the hour.</span></div>';
+    if(r.k==='wake')return '<div class="hr mid"><span class="t mono">'+utc(r.t)+'</span><span class="m"><b>awake.</b> '+fmt(r.usd)+' arrived. it keeps every share it ever delivered.</span></div>';
+    if(r.k==='quiet')return '<div class="hr mid"><span class="t mono">'+utc(r.t)+'</span><span class="m"><b>quiet.</b> the wallet is empty. it is not deleted and it can be woken.</span></div>';
+    return '<div class="hr none"><span class="t mono">'+utc(r.t)+'</span><span class="tk">bought nothing &mdash; '+esc(r.why||'')+'</span></div>';
+  }).join('');
+}
+function evidence(){
+  var a=get(SEL),el=$('#evRows');if(!a||!el)return;
+  var gr=ground(a.ground),sc=scores(a),mx=0.0001;
+  gr.tks.forEach(function(t){mx=Math.max(mx,Math.abs(sc[t]||0))});
+  $('#evRule').textContent='55% of the session · 45% of the back half';
+  el.innerHTML=gr.tks.map(function(tk){
+    var q=Q&&Q[tk],v=sc[tk],has=(v!==undefined);
+    var w=has?Math.min(50,Math.abs(v)/mx*50):0, neg=has&&v<0;
+    return '<div class="evr'+(a.pick===tk&&!a.quiet?' win':'')+'"><span class="nm mono">'+tk+'</span>'+
+      '<span class="track"><b></b><i class="'+(neg?'dn':'')+'" style="left:'+(neg?50-w:50)+'%;width:'+w+'%"></i></span>'+
+      '<span class="r mono '+(has?(v>=0?'up':'dn'):'')+'">'+(has?(v>=0?'+':'')+v.toFixed(2):'—')+'</span>'+
+      '<span class="r mono">'+(q?q.price.toFixed(2):'—')+'</span></div>'}).join('');
+}
+function vitals(){
+  var a=get(SEL);if(!a)return;
+  var gr=ground(a.ground);
+  $('#aId').textContent=a.id;$('#aName').textContent=a.name+' $'+a.tk;
+  $('#aState').textContent=a.quiet?'quiet':'awake';
+  $('#cState').innerHTML='<span class="dot"></span>'+(a.quiet?'quiet':'awake');
+  $('#cState').className='chip2'+(a.quiet?' q':'');
+  $('#aGround').textContent=gr.label+' · '+gr.tks.join(' ');
+  $('#aHours').textContent=a.hours;
+  var hold=0,hn=0;for(var k in a.pile){var q=Q&&Q[k];if(q)hold+=a.pile[k]*q.price;hn++}
+  $('#aHold').textContent=hn?fmt(hold)+' · '+hn+(hn>1?' names':' name'):'nothing';
+  $('#aFed').textContent=fmt(a.fed);
+  $('#nDeliv').textContent=fmt(a.delivUsd/SUPPLY*1e6);
+  $('#nDelivSub').textContent=fmt(a.delivUsd)+' delivered in total';
+  $('#nBal').textContent=fmt(a.bal);
+  $('#nBalSub').textContent=a.quiet?'the wallet is empty':'spent whole on the next hour';
+  var r=a.quiet?null:reading(a);
+  $('#aPick').innerHTML=a.quiet?'it is not reading anything.':(r?'reading <b>'+r.tk+'</b> &mdash; strongest flow in '+esc(gr.label)+' <span class="mono" style="color:var(--mute)">'+(r.ev.score>=0?'+':'')+r.ev.score.toFixed(2)+'</span>':'no price read.');
+  $('#tVal').textContent=hn?fmt(hold):'nothing yet';
+  $('#tCount').textContent=a.today.filter(function(x){return x.k==='buy'}).length+' fills';
+  var left=DAY-(Math.floor(T)%DAY);
+  $('#tCd').textContent=hms(left);
+  $('#tBar').style.width=((DAY-left)/DAY*100).toFixed(1)+'%';
+  $('#rule').innerHTML='rule: <b>strongest flow in the ground</b>';
+  var fills=a.today.filter(function(x){return x.k==='buy'}).length;
+  $('#cFills').textContent=fills;
+  $('#cPick').textContent=a.quiet?'nothing':(a.pick||'—');
+  $('#cCd').textContent=hms(DAY-(Math.floor(T)%DAY));
+  $('#hName').textContent=a.name+' $'+a.tk;
+  $('#hState').textContent=a.quiet?'quiet':'awake';
+  $('#hDeliv').textContent=fmt(a.delivUsd/SUPPLY*1e6);
+  $('#hBal').textContent=fmt(a.bal)+' waiting';
+  $('#hSay').textContent=a.quiet?'the wallet is empty. it is not deleted, and a fee wakes it.'
+    :(hn? 'holding '+fmt(hold)+' across '+hn+(hn>1?' names':' name')+'. all of it leaves at midnight.'
+        : 'nothing bought yet today. the next hour is its first.');
+  evidence();
+  $('#hstat').innerHTML='<b>'+A.filter(awake).length+'</b> awake · '+A.length+' minds · '+(VIA?esc(VIA.indexOf('snapshot')===0?'snapshot prices':'live prices'):'—');
+  $('#foot').textContent=(Q?VIA:'')+' · the board is a rehearsal in your browser';
+}
+function spark(el,tks){
+  var d=Math.min(2,devicePixelRatio||1),w=el.clientWidth||250,h=30;
+  el.width=Math.round(w*d);el.height=Math.round(h*d);
+  var g=el.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);
+  if(!Q)return;
+  var v=null;for(var i=0;i<tks.length;i++){if(Q[tks[i]]&&Q[tks[i]].closes&&Q[tks[i]].closes.length>2){v=Q[tks[i]].closes;break}}
+  if(!v)return;
+  var lo=Math.min.apply(null,v),hi=Math.max.apply(null,v),rg=(hi-lo)||1;
+  g.strokeStyle='rgba(20,20,20,.55)';g.lineWidth=1.3;g.beginPath();
+  v.forEach(function(x,i){var px=i/(v.length-1)*w,py=h-4-((x-lo)/rg)*(h-8);i?g.lineTo(px,py):g.moveTo(px,py)});
+  g.stroke();
+  g.fillStyle='#141414';var lx=w,ly=h-4-((v[v.length-1]-lo)/rg)*(h-8);g.beginPath();g.arc(lx-2,ly,2.2,0,7);g.fill();
+}
+function mini(el,a){
+  if(!el||!a)return;
+  var d=Math.min(2,devicePixelRatio||1),w=el.clientWidth||260,h=124;
+  el.width=Math.round(w*d);el.height=Math.round(h*d);
+  var g=el.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);
+  var gr=ground(a.ground),sc=scores(a),mx=0.0001,nn=gr.tks.length;
+  gr.tks.forEach(function(t){mx=Math.max(mx,Math.abs(sc[t]||0))});
+  var cx=w/2,cy=h/2,R=h*0.33;
+  g.strokeStyle='rgba(20,20,20,.16)';g.lineWidth=.8;
+  for(var k=0;k<48;k++){var an=k/48*2*Math.PI;
+    g.beginPath();g.moveTo(cx+Math.cos(an)*R*1.06,cy+Math.sin(an)*R*1.06);
+    g.lineTo(cx+Math.cos(an)*R*1.10,cy+Math.sin(an)*R*1.10);g.stroke()}
+  for(var i=0;i<nn;i++){
+    var a2=-Math.PI/2+i*2*Math.PI/nn,v=(sc[gr.tks[i]]||0)/mx,on=(a.pick===gr.tks[i]&&!a.quiet);
+    g.strokeStyle=v>=0?(on?'rgba(20,20,20,.9)':'rgba(20,20,20,.3)'):'rgba(180,68,60,.5)';
+    g.lineWidth=2.6;g.lineCap='round';g.beginPath();
+    var q0=v>=0?R*1.18:R*1.18-R*0.34*Math.abs(v),q1=v>=0?R*1.18+R*0.34*Math.abs(v):R*1.18;
+    g.moveTo(cx+Math.cos(a2)*q0,cy+Math.sin(a2)*q0);
+    g.lineTo(cx+Math.cos(a2)*q1,cy+Math.sin(a2)*q1);
+    g.stroke();
+  }
+  g.save();g.translate(cx,cy);
+  g.fillStyle=a.quiet?'#c9c2b9':'rgba(20,20,20,.88)';vanePath(g,0,0,R,-0.62,true);
+  g.fillStyle=a.quiet?'#bcb5ac':'#141414';vanePath(g,0,0,R,a.quiet?-0.62:angleFor(a),false,true);
+  g.restore();
+}
+function board(){
+  var el=$('#cards');
+  el.innerHTML=A.map(function(a){var gr=ground(a.ground);
+    return '<div class="ag card'+(a.id===SEL?' on':'')+'" data-id="'+a.id+'">'+
+     '<div class="top"><div><div class="nm">'+esc(a.name)+'</div><div class="tk mono">$'+esc(a.tk)+' · '+a.id+'</div>'+
+     '<div class="gr">'+esc(gr.label)+'</div></div><span class="pill'+(a.quiet?' q':'')+'"><span class="dot"></span>'+(a.quiet?'quiet':'awake')+'</span></div>'+
+     '<div class="two"><div><i>delivered / 1M</i><b class="mono">'+fmt(a.delivUsd/SUPPLY*1e6)+'</b></div>'+
+     '<div><i>hours acted</i><b class="mono">'+a.hours+'</b></div></div>'+
+     '<canvas class="mini" data-id="'+a.id+'"></canvas>'+
+     '<div class="chips">'+gr.tks.map(function(t){var c=ch(t);
+        return '<span class="chip"><b>'+t+'</b> '+(c==null?'—':(c>=0?'+':'')+c.toFixed(2)+'%')+'</span>'}).join('')+'</div></div>'}).join('');
+  $$('#cards .ag').forEach(function(c){
+    c.onclick=function(){follow(c.dataset.id);show('stage')};
+    mini(c.querySelector('.mini'),get(c.querySelector('.mini').dataset.id));
+  });
+  $('#f1').textContent='0';$('#f2').textContent='0';$('#f3').textContent='$0.00';$('#f4').textContent='$0.00';
+}
+function follow(id){var a=get(id);if(!a)return;SEL=id;
+  if(!a.quiet&&Q){var r=reading(a);if(r)a.pick=r.tk}
+  DIAL.target=angleFor(a);rows();vitals();
+  $$('#cards .ag').forEach(function(c){c.classList.toggle('on',c.dataset.id===id)});
+}
+
+$('#down').onclick=function(){$('#ledger').scrollIntoView({behavior:'smooth',block:'start'})};
+addEventListener('scroll',function(){
+  var h=$('#hud');if(!h)return;
+  var on=(scrollY>260)&&!$('#v-stage').hidden;
+  h.classList.toggle('off',!on);
+},{passive:true});
+// ---------- views ----------
+function show(v){
+  ['stage','board','launch','read'].forEach(function(k){
+    var el=$('#v-'+k);var on=(k===v);
+    if(on){el.hidden=false;el.classList.remove('view');void el.offsetWidth;el.classList.add('view')}else el.hidden=true;
+  });
+  $$('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.v===v)});
+  if(v==='board')board();
+  if(v==='stage'){requestAnimationFrame(function(){dial()})}else{$('#hud').classList.add('off')}
+  try{history.replaceState(null,'','#'+v)}catch(e){}
+  scrollTo({top:0,behavior:'smooth'});
+}
+$$('#nav button').forEach(function(b){b.onclick=function(){show(b.dataset.v)}});
+$('#home').onclick=function(e){e.preventDefault();show('stage')};
+
+// ---------- controls ----------
+$('#send').onclick=function(){
+  var a=get(SEL),v=parseFloat($('#fee').value);
+  if(!a)return;
+  if(!(v>0)){$('#fee').focus();flash('#fee');return}
+  if(v>1e6){flash('#fee');return}
+  feed(a,v);$('#fee').value='';vitals();board();
+};
+function flash(s){var el=$(s);el.style.borderColor='#b4443c';setTimeout(function(){el.style.borderColor=''},700)}
+$('#fee').addEventListener('keydown',function(e){if(e.key==='Enter')$('#send').click()});
+$$('#spd button').forEach(function(b){b.onclick=function(){SPEED=+b.dataset.s;$$('#spd button').forEach(function(x){x.classList.toggle('on',x===b)})}});
+$('#next').onclick=function(){var i=A.findIndex(function(x){return x.id===SEL});follow(A[(i+1)%A.length].id)};
+(function(){var s=$('#lGround');s.innerHTML=GROUNDS.map(function(g){return '<option value="'+g.id+'">'+g.label+' · '+g.tks.join(' ')+'</option>'}).join('')})();
+function chk(){$('#lGo').disabled=!($('#lName').value.trim()&&$('#lTk').value.trim())}
+['#lName','#lTk'].forEach(function(s){$(s).addEventListener('input',chk)});
+$('#lGo').onclick=function(){
+  var n=$('#lName').value.trim(),tk=$('#lTk').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),gr=$('#lGround').value;
+  if(!n||!tk)return;
+  var id='m-'+String(A.length+1).padStart(2,'0');
+  A.unshift({id:id,name:n,tk:tk,ground:gr,bal:0,fed:0,hours:0,pick:null,today:[],pile:{},delivUsd:0,spentUsd:0,born:now(),quiet:true,last:now()});
+  save();
+  $('#lOut').innerHTML='<b>'+esc(n)+'</b> $'+esc(tk)+' opened its eyes on <b>'+esc(ground(gr).label)+'</b>. Its wallet is empty, so it is quiet until a fee reaches it.';
+  $('#lName').value='';$('#lTk').value='';chk();
+  follow(id);board();setTimeout(function(){show('stage')},420);
+};
+$('#lReset').onclick=function(){try{localStorage.removeItem(KEY)}catch(e){}A=seed();T=Math.floor(Date.now()/1000);SLOT=Math.floor(T/HOUR);DSLOT=Math.floor(T/DAY);
+  $('#lOut').textContent='board cleared.';follow(A[0].id);board()};
+
+// ---------- quotes ----------
+function quotes(){return fetch('/api/quote').then(function(r){return r.json()}).then(function(j){
+  Q=j.quotes;VIA=j.via;A.forEach(function(a){if(!a.quiet){var r=reading(a);if(r)a.pick=r.tk}});
+  A.forEach(prime);rows();save();
+  if(SEL)DIAL.target=angleFor(get(SEL));
+  vitals();board();return j}).catch(function(){VIA='no prices';vitals()})}
+
+// ---------- the loop ----------
+var last=performance.now();
+function loop(ms){
+  var dt=Math.min(0.25,(ms-last)/1000);last=ms;
+  T+=dt*SPEED;
+  var sl=Math.floor(T/HOUR);
+  if(sl!==SLOT){var n=Math.min(6,sl-SLOT);SLOT=sl;for(var i=0;i<n;i++)A.forEach(act);save();board()}
+  var ds=Math.floor(T/DAY);
+  if(ds!==DSLOT){DSLOT=ds;A.forEach(midnight);save();board()}
+  DIAL.ang+=(shortest(DIAL.ang,DIAL.target))*Math.min(1,dt*3.4);
+  DIAL.glow=Math.max(0,DIAL.glow-dt*1.4);
+  dial();vitals();
+  requestAnimationFrame(loop);
+}
+function shortest(a,b){var d=(b-a)%(2*Math.PI);if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;return d}
+
+// ---------- boot ----------
+SEL=A[0].id;
+rows();vitals();
+quotes().then(function(){follow(A[0].id);DIAL.ang=DIAL.target;setInterval(quotes,60000)});
+requestAnimationFrame(loop);
+addEventListener('resize',function(){clearTimeout(window.__r);window.__r=setTimeout(function(){dial();if(!$('#v-board').hidden)board()},140)});
+(function(){var h=(location.hash||'').slice(1);if(['board','launch','read'].indexOf(h)>=0)show(h)})();
+addEventListener('keydown',function(e){
+  var tg=(e.target.tagName||'').toLowerCase();if(tg==='input'||tg==='select')return;
+  if(e.key==='f')$('#fee').focus();
+  else if(e.key==='n')$('#next').click();
+  else if(e.key>='1'&&e.key<='4')show(['stage','board','launch','read'][+e.key-1]);
+});
+</script>
+</body>
+</html>
